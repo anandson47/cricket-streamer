@@ -486,7 +486,7 @@ export default function Home() {
 
     await pc.setLocalDescription(offer);
 
-    const response = await fetch("http://YOUR_PC_IP:8889/stream/whip", {
+    const response = await fetch("http://192.168.1.17:8889/stream/whip", {
       method: "POST",
 
       headers: {
