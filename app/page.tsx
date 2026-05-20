@@ -1,34 +1,32 @@
-'use client';
+"use client";
 
-import { useRef } from 'react';
+import { useRef } from "react";
 
 export default function Home() {
-
   const videoRef = useRef<HTMLVideoElement>(null);
 
   async function startCamera() {
-
     try {
-
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: {
+            ideal: "environment",
+          },
+        },
+        audio: true,
+      });
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-
     } catch (err) {
       console.log(err);
-      alert('Camera failed');
+      alert("Camera failed");
     }
   }
 
   return (
     <main className="w-screen h-screen bg-black flex flex-col items-center justify-center gap-4">
-
       <video
         ref={videoRef}
         autoPlay
@@ -43,7 +41,6 @@ export default function Home() {
       >
         Start Camera
       </button>
-
     </main>
   );
 }
