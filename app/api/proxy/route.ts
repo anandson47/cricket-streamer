@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import * as cheerio from "cheerio";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const matchLink: any = searchParams.get("matchLink");
+export async function GET(req: NextRequest) {
+   const searchParams = req.nextUrl.searchParams;
+
+  const matchLink: any = searchParams.get('matchLink');
 
   try {
     const response = await fetch(
