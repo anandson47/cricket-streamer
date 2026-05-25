@@ -33,6 +33,9 @@ export default function Home() {
     currentOver: ["1", "4", ".", "W"],
   });
 
+  //Link state for API
+  const [matchLink, setMatchLink] = useState("");
+
   // IMPORTANT
   // Live state reference
   const matchDataRef = useRef(matchData);
@@ -108,6 +111,12 @@ export default function Home() {
   // ==========================================
 
   async function startCamera() {
+
+    if(!checkMatchLinkValidity()) {
+      alert("Please enter a valid CricHeroes match URL");
+      setMatchLink("");
+      return;
+    }
     startApiPolling();
     try {
       const cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -139,6 +148,20 @@ export default function Home() {
       console.log(err);
     }
   }
+
+  function checkMatchLinkValidity(): boolean {
+    const matchlink = matchLink.trim();
+    if(matchlink.length === 0) return false;
+
+    try {
+      const url = new URL(matchlink);
+      return url.hostname === "cricheroes.com";
+    } catch (e) {
+      return false;
+    }
+  }
+
+
 
   // ==========================================
   // ROUND RECT
@@ -200,9 +223,9 @@ export default function Home() {
 
     canvas.height = 720 * dpr;
 
-    canvas.style.width = "1280px";
+    canvas.style.width = "90%";
 
-    canvas.style.height = "720px";
+    canvas.style.height = "90%";
 
     ctx.scale(dpr, dpr);
 
@@ -486,7 +509,7 @@ export default function Home() {
 
     await pc.setLocalDescription(offer);
 
-    const response = await fetch("http://192.168.1.17:8889/stream/whip", {
+    const response = await fetch("https://winnifred-destroyable-suppletorily.ngrok-free.dev/stream/whip", {
       method: "POST",
 
       headers: {
@@ -560,10 +583,13 @@ export default function Home() {
     </div>
 
     <div className="absolute bottom-4 left-20 flex gap-4">
-      <input className="bg-white rounded text-black p-2" style={{ width: '300px' }} placeholder="Enter stream URL"></input>
-      <button className="bg-blue-900 text-white px-5  hover:bg-blue-600 py-2 rounded-xl z-50">
-        Select Match
-      </button>
+      <input 
+        className="bg-white rounded text-black p-2" 
+        style={{ width: '300px' }} 
+        placeholder="Enter Stream URL"
+        value={matchLink}
+        onChange={(e) => setMatchLink(e.target.value)}
+      />
     </div>
     </main>
   );

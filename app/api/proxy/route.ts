@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 
 import * as cheerio from "cheerio";
 
-export async function GET() {
+export async function GET(matchLink: string) {
   try {
     const response = await fetch(
-      "https://cricheroes.com/scorecard/24884465/individual/crcf-vs-test1/live",
+      matchLink,
       {
         headers: {
           "User-Agent": "Mozilla/5.0",
