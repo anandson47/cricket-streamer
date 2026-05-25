@@ -20,15 +20,21 @@ export default function Home() {
 
   const [matchData, setMatchData] = useState({
     battingTeam: "SCC",
+    bowlingTeam: "RCB",
+    battingFirst: true,
     score: "152/3",
     overs: "16.2",
     runRate: "9.38",
+    result: "",
 
     batsman1: "Kohli 72*(44)",
 
     batsman2: "Pandya 18*(9)",
 
     bowler: "Bumrah 3-21 (4)",
+
+    requiredRunRate: "12.5",
+    batsman1Balls: "44",
 
     currentOver: ["1", "4", ".", "W"],
   });
@@ -89,11 +95,16 @@ export default function Home() {
 
     async function fetchMatch() {
       try {
-        const response = await fetch("/api/proxy" + `?matchLink=${encodeURIComponent(matchLink)}`);
+        const response = await fetch(
+          "/api/proxy" + `?matchLink=${encodeURIComponent(matchLink)}`,
+        );
 
         const data = await response.json();
 
-        data.score= calculateScore(parseFloat(data.runRate), data.overs).toString();
+        data.score = calculateScore(
+          parseFloat(data.runRate),
+          data.overs,
+        ).toString();
 
         setMatchData(data);
       } catch (err) {
@@ -111,8 +122,7 @@ export default function Home() {
   // ==========================================
 
   async function startCamera() {
-
-    if(!checkMatchLinkValidity()) {
+    if (!checkMatchLinkValidity()) {
       alert("Please enter a valid CricHeroes match URL");
       setMatchLink("");
       return;
@@ -129,8 +139,8 @@ export default function Home() {
           height: 720,
 
           frameRate: {
-            ideal: 15,
-            max: 15,
+            ideal: 30,
+            max: 30,
           },
         },
 
@@ -151,7 +161,7 @@ export default function Home() {
 
   function checkMatchLinkValidity(): boolean {
     const matchlink = matchLink.trim();
-    if(matchlink.length === 0) return false;
+    if (matchlink.length === 0) return false;
 
     try {
       const url = new URL(matchlink);
@@ -160,8 +170,6 @@ export default function Home() {
       return false;
     }
   }
-
-
 
   // ==========================================
   // ROUND RECT
@@ -301,9 +309,19 @@ export default function Home() {
 
       ctx.fillStyle = "#FFFFFF";
 
-      ctx.font = "700 30px Inter";
+      ctx.font = "700 25px Inter";
 
-      ctx.fillText(`${matchData.battingTeam || 'Not Configured'} - ${matchData.score}`, 60, 585);
+      if (matchData.result) {
+        ctx.fillText(`${matchData.result}`, 60, 585);
+      } else {
+        ctx.fillText(
+          `${matchData.battingTeam || "Not Configured"} - ${matchData.score} vs ${matchData.bowlingTeam || "Not Configured"}`,
+          60,
+          585,
+        );
+      }
+
+      console.log(matchData.batsman1Balls);
 
       // ==========================================
       // OVERS
@@ -318,9 +336,13 @@ export default function Home() {
       // ==========================================
       // RUN RATE
       // ==========================================
+      if (matchData.battingTeam) {
+        ctx.fillText(`CRR ${matchData.runRate}`, 180, 625);
+      }
 
-      ctx.fillText(`CRR ${matchData.runRate}`, 180, 625);
-
+      if (matchData.battingFirst === false) {
+        ctx.fillText(`RRR ${matchData.requiredRunRate}`, 330, 625);
+      }
       // ==========================================
       // CURRENT OVER
       // ==========================================
@@ -385,25 +407,53 @@ export default function Home() {
       // BATSMEN
       // ==========================================
 
+      ctx.font = "500 20px Inter";
+
+      ctx.fillText("Batsmen", 670, 565);
+
       ctx.fillStyle = "#FFB800";
 
       ctx.font = "500 20px Inter";
 
-      ctx.fillText(matchData.batsman1, 670, 585);
+      ctx.fillText(matchData.batsman1, 670, 595);
 
-       ctx.fillStyle = "#FFFFFF";
+      ctx.fillStyle = "#FFFFFF";
 
-      ctx.fillText(matchData.batsman2, 670, 625);
+      ctx.fillText(matchData.batsman2, 670, 635);
 
       // ==========================================
       // BOWLER
       // ==========================================
 
+      ctx.fillStyle = "#00C2FF";
+
+      ctx.font = "500 20px Inter";
+
+      ctx.fillText("Bowler", 980, 565);
+
       ctx.fillStyle = "#FFB800";
 
-      ctx.font = "600 20px Inter";
-
       ctx.fillText(matchData.bowler, 980, 605);
+      matchData.currentOver.forEach((ball: string, i: number) => {
+        ctx.fillStyle =
+          ball === "W"
+            ? "#FF3B3B"
+            : ball === "4"
+              ? "#00C2FF"
+              : ball === "6"
+                ? "#FFB800"
+                : "#EAEAEA";
+
+        roundRect(ctx, 350 + i * 60, 585, 42, 42, 12);
+
+        ctx.fill();
+
+        ctx.fillStyle = "#000000";
+
+        ctx.font = "700 24px Inter";
+
+        ctx.fillText(ball, 980 + i * 60, 635);
+      });
 
       // ==========================================
       // LIVE BADGE
@@ -451,7 +501,7 @@ export default function Home() {
     canvas: HTMLCanvasElement,
     cameraStream: MediaStream,
   ) {
-    const canvasStream = canvas.captureStream(15);
+    const canvasStream = canvas.captureStream(30);
 
     const combinedStream = new MediaStream([
       ...canvasStream.getVideoTracks(),
@@ -495,7 +545,9 @@ export default function Home() {
         params.encodings = [{}];
       }
 
-      params.encodings[0].maxBitrate = 1200000;
+      params.encodings[0].maxBitrate = 5000000;
+      params.encodings[0].scaleResolutionDownBy = 1;
+      params.encodings[0].maxFramerate = 30;
 
       await sender.setParameters(params);
     }
@@ -509,15 +561,18 @@ export default function Home() {
 
     await pc.setLocalDescription(offer);
 
-    const response = await fetch("https://winnifred-destroyable-suppletorily.ngrok-free.dev/stream/whip", {
-      method: "POST",
+    const response = await fetch(
+      "https://winnifred-destroyable-suppletorily.ngrok-free.dev/stream/whip",
+      {
+        method: "POST",
 
-      headers: {
-        "Content-Type": "application/sdp",
+        headers: {
+          "Content-Type": "application/sdp",
+        },
+
+        body: offer.sdp,
       },
-
-      body: offer.sdp,
-    });
+    );
 
     const answer = await response.text();
 
@@ -550,11 +605,9 @@ export default function Home() {
       });
 
       videoRef.current.srcObject = null;
-      const ctx:any=canvasRef.current?.getContext("2d");
-      ctx?.clearRect(0,0,1280,720);
+      const ctx: any = canvasRef.current?.getContext("2d");
+      ctx?.clearRect(0, 0, 1280, 720);
     }
-
-    
 
     console.log("Streaming stopped");
   }
@@ -565,32 +618,31 @@ export default function Home() {
 
       <canvas ref={canvasRef} className="w-full h-full" />
 
-    <div className="absolute top-4 right-4 flex flex-col gap-4">
-      CONTROLS
-      <button
-        onClick={startCamera}
-        className="bg-green-900 hover:bg-green-600 text-white px-5 py-2 rounded-xl z-50"
-      >
-        START
-      </button>
+      <div className="absolute top-4 right-4 flex flex-col gap-4">
+        CONTROLS
+        <button
+          onClick={startCamera}
+          className="bg-green-900 hover:bg-green-600 text-white px-5 py-2 rounded-xl z-50"
+        >
+          START
+        </button>
+        <button
+          onClick={stopStreaming}
+          className="bg-red-900 hover:bg-red-600 text-white px-5 py-2 rounded-xl z-50"
+        >
+          STOP
+        </button>
+      </div>
 
-      <button
-        onClick={stopStreaming}
-        className="bg-red-900 hover:bg-red-600 text-white px-5 py-2 rounded-xl z-50"
-      >
-        STOP
-      </button>
-    </div>
-
-    <div className="absolute bottom-4 left-20 flex gap-4">
-      <input 
-        className="bg-white rounded text-black p-2" 
-        style={{ width: '300px' }} 
-        placeholder="Enter Stream URL"
-        value={matchLink}
-        onChange={(e) => setMatchLink(e.target.value)}
-      />
-    </div>
+      <div className="absolute bottom-4 left-20 flex gap-4">
+        <input
+          className="bg-white rounded text-black p-2"
+          style={{ width: "300px" }}
+          placeholder="Enter Stream URL"
+          value={matchLink}
+          onChange={(e) => setMatchLink(e.target.value)}
+        />
+      </div>
     </main>
   );
 }
