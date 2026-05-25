@@ -89,7 +89,7 @@ export default function Home() {
 
     async function fetchMatch() {
       try {
-        const response = await fetch("/api/proxy");
+        const response = await fetch("/api/proxy" + `?matchLink=${encodeURIComponent(matchLink)}`);
 
         const data = await response.json();
 
