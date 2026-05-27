@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import * as cheerio from "cheerio";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -12,11 +12,30 @@ export async function GET(req: NextRequest) {
 
   try {
     const response = await fetch(matchLink, {
+      cache: "no-store",
       headers: {
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        Referer: "https://cricheroes.com/",
+        Origin: "https://cricheroes.com",
+        Connection: "keep-alive",
+        "Cache-Control": "no-cache",
       },
     });
 
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error: `HTTP ${response.status}`,
+        },
+        {
+          status: response.status,
+        },
+      );
+    }
     const html = await response.text();
 
     const $ = cheerio.load(html);
@@ -149,9 +168,12 @@ export async function GET(req: NextRequest) {
       "-" +
       bowlerMaidens +
       "-" +
-      calculateRunsConceded(parseFloat(bowlerEconomy), parseFloat(bowlerOvers)) +
+      calculateRunsConceded(
+        parseFloat(bowlerEconomy),
+        parseFloat(bowlerOvers),
+      ) +
       "-" +
-      bowlerWickets ;
+      bowlerWickets;
 
     const matchOver = $(".jMCptV").first().text().trim();
 
@@ -164,7 +186,7 @@ export async function GET(req: NextRequest) {
       return Math.round((parseInt(balls) * parseFloat(strikeRate)) / 100);
     }
 
-    function calculateRunsConceded(economy:any, oversBowled:any) {
+    function calculateRunsConceded(economy: any, oversBowled: any) {
       // Convert overs like 4.3 => 4 overs + 3 balls
       const overs = Math.floor(oversBowled);
       const balls = Math.round((oversBowled - overs) * 10);
